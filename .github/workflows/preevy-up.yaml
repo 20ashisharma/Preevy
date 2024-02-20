@@ -1,0 +1,43 @@
+name: Deploy Preevy environment
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  id-token: write
+  contents: read
+
+  # Needed to write a PR comment with the environment URLs
+  pull-requests: write
+
+jobs:
+  deploy:
+    timeout-minutes: 15
+
+    # allow a single job to run per PR
+    concurrency: preevy-${{ github.event.number }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::211598724864:role/Preevy
+          aws-region: ap-south-1
+
+      - uses: actions/checkout@v3
+
+      - uses: livecycle/preevy-up-action@v2.4.0
+        id: preevy
+        with:
+          profile-url: "${{ vars.PREEVY_PROFILE_URL }}"
+          docker-compose-yaml-paths: "./docker/docker-compose.yaml"
+
+      # Change `frontend` and `3000` in this step to your main service and port
+      # This will appear as the GH environment URL
+      - id: store_url
+        name: Store URL of frontend
+        run: |
+          echo url=$(jq -r '.[] | select(.service=="frontend" and .port==3000).url' "${{ steps.preevy_up.outputs.urls-file }}") >> "$GITHUB_OUTPUT"
