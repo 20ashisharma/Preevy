@@ -65,7 +65,7 @@ networks:
 volumes:
   back-notused:
   db-data:
-secrets:
-  db-password:
-    file: db/password.txt
+#secrets:
+  #db-password:
+    #file: db/password.txt
 
